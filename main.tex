@@ -1,0 +1,141 @@
+\documentclass[12pt,letterpaper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-nodecimaldot]{babel}
+\usepackage{newtxtext,newtxmath}
+\usepackage[margin=1in,headheight=15pt]{geometry}
+\usepackage{setspace,graphicx,booktabs,tabularx,array,float,caption,fancyhdr,xurl,hyperref,titlesec,listings}
+\hypersetup{hidelinks}\urlstyle{same}
+\doublespacing\setlength{\parindent}{0.5in}\setlength{\parskip}{0pt}
+\setcounter{secnumdepth}{0}
+\titleformat{\section}{\normalfont\bfseries\centering}{}{0pt}{}
+\titleformat{\subsection}{\normalfont\bfseries}{}{0pt}{}
+\titlespacing*{\section}{0pt}{1em}{0pt}
+\addto\captionsspanish{\renewcommand{\tablename}{Tabla}}
+\captionsetup{justification=raggedright,singlelinecheck=false,labelsep=newline,labelfont=bf,textfont=it}
+\pagestyle{fancy}\fancyhf{}\rhead{\thepage}\renewcommand{\headrulewidth}{0pt}
+\fancypagestyle{plain}{\fancyhf{}\rhead{\thepage}\renewcommand{\headrulewidth}{0pt}}
+\newcommand{\nota}[1]{\par\noindent\small\textit{Nota.} #1\par\normalsize}
+\newcommand{\refapa}[1]{\par\noindent\hangindent=0.5in\hangafter=1 #1\par}
+\lstset{language=Python,basicstyle=\ttfamily\scriptsize,breaklines=true,showstringspaces=false,frame=single,numbers=left,numberstyle=\tiny}
+\begin{document}\raggedright
+\begin{titlepage}\thispagestyle{fancy}\begin{center}
+\vspace*{1in}{\bfseries Diagnóstico de vinos con redes densas: comparación de optimizadores y regularización\par}\vspace{1\baselineskip}
+Carlos Mario Salvatore Ocampo Aguilar\par
+Especialización en Inteligencia Artificial\par Universidad de Cundinamarca\par
+604010 -- Redes Neuronales III\par R2-A1-S7 -- Optimización y regularización\par 10 de octubre de 2026\par
+\end{center}\vfill\end{titlepage}\setcounter{page}{2}
+\begin{center}\textbf{Diagnóstico de vinos con redes densas: comparación de optimizadores y regularización}\end{center}
+\section{Planteamiento y control de datos}
+Se estudió una clasificación pequeña de tres variedades de vino mediante 13
+mediciones fisicoquímicas. \textit{Wine} tiene 178 observaciones; su tamaño
+hace que una única partición no baste para afirmar estabilidad poblacional
+(scikit-learn, s. f.). La red $13\to64\to32\to3$ utilizó ReLU y entropía
+cruzada sobre logits.
+
+Primero se apartó prueba; el resto se dividió entre entrenamiento y desarrollo
+manteniendo las proporciones de clase. La Tabla~\ref{tab:protocolo} documenta
+los tamaños. Se ajustó \texttt{StandardScaler} solo con entrenamiento y se
+transformaron desarrollo y prueba con los mismos parámetros. Esta secuencia
+evita filtrar información de prueba al aprendizaje. También se comprobó que
+no hubiera índices compartidos ni valores no finitos.
+\begin{table}[H]\caption{Protocolo experimental}\label{tab:protocolo}
+\begin{singlespace}\small\centering\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{0.34\textwidth} X}\toprule
+Elemento & Especificación \\\midrule
+Conjunto & Wine: 178, 13 variables, 3 clases \\
+Entrenamiento / desarrollo / prueba & 106 / 36 / 36 \\
+Partición & Estratificada; prueba aislada para evaluación final \\
+Preprocesamiento & Escalador ajustado solo en entrenamiento \\
+Semillas de inicialización & 19, 31, 43 \\
+Tamaño de lote y máximo de épocas & 16 y 180 \\
+Criterio de selección & Mayor F1 macro medio en desarrollo \\\bottomrule
+\end{tabularx}\end{singlespace}\nota{Diseño y ejecución propios; los tamaños provienen del conjunto cargado.}\end{table}
+\section{Comparación controlada}
+La Tabla~\ref{tab:config} registra las cinco variantes. SGD con momento,
+RMSprop y AdamW proporcionan tres reglas de actualización. En AdamW, el
+decaimiento de pesos está desacoplado de la actualización adaptativa;
+no es idéntico a sumar una penalización L2 al objetivo de Adam
+(Loshchilov \& Hutter, 2019; PyTorch, s. f.).
+La variante completa añade dropout $0,15$, parada tras 16 épocas sin una
+mejora de pérdida mayor que $10^{-5}$ y reducción de tasa a la mitad tras
+seis épocas de estancamiento. Se restauró el mejor estado de desarrollo.
+
+Las otras variantes finalizaron a 180 épocas. Cada una se repitió con tres
+semillas, manteniendo fija la partición; las tres corridas no son
+validación cruzada. El test quedó cerrado hasta después de elegir la
+configuración con F1 macro medio de desarrollo.
+\begin{table}[H]\caption{Configuraciones ensayadas}\label{tab:config}
+\begin{singlespace}\small\centering\begin{tabularx}{\textwidth}{lcccc}\toprule
+Optimizador y variante & Tasa & Decaimiento & Dropout & Parada \\\midrule
+\texttt{SGD\_momentum} & 0,0350 & 0,000 & 0,00 & No \\
+\texttt{AdamW\_base} & 0,0030 & 0,000 & 0,00 & No \\
+\texttt{RMSprop} & 0,0015 & 0,000 & 0,00 & No \\
+\texttt{AdamW\_decay} & 0,0030 & 0,001 & 0,00 & No \\
+\texttt{AdamW\_completo} & 0,0030 & 0,001 & 0,15 & Sí \\\bottomrule
+\end{tabularx}\end{singlespace}\nota{Quince ajustes por persona: cinco configuraciones y tres semillas. La tasa de SGD y RMSprop se fijó antes de comparar; no se hizo búsqueda exhaustiva.}\end{table}
+\section{Evidencia de desarrollo}
+La Figura~\ref{fig:optimizadores} muestra cómo se mueve cada método para
+la semilla 19. La Tabla~\ref{tab:dev} promedia tres inicializaciones.
+El F1 macro da igual peso a las clases y evita que una clase numerosa
+oculte una pequeña; la desviación estándar advierte sobre variación por
+semilla. Una diferencia pequeña entre configuraciones en 36 muestras de
+desarrollo no debe interpretarse como superioridad universal.
+\begin{figure}[H]\caption{Pérdida y F1 en desarrollo por optimizador}\label{fig:optimizadores}
+\centering\includegraphics[width=1.0\textwidth,height=0.45\textheight,keepaspectratio]{resultados/optimizadores.png}
+\nota{Resultados propios, semilla 19; las demás curvas están en los CSV.}\end{figure}
+\begin{table}[H]\caption{Resultados de desarrollo en tres semillas}\label{tab:dev}
+\begin{singlespace}\small\centering\begin{tabularx}{\textwidth}{lcccc}\toprule
+Configuración & F1 macro medio & DE & Pérdida & Brecha F1 \\\midrule
+\texttt{SGD\_momentum} & 0,9533 & 0,0320 & 0,1426 & 0,0467 \\
+\texttt{AdamW\_base} & 0,9629 & 0,0154 & 0,1571 & 0,0371 \\
+\texttt{RMSprop} & 0,9533 & 0,0320 & 0,1517 & 0,0467 \\
+\texttt{AdamW\_decay} & 0,9629 & 0,0154 & 0,1561 & 0,0371 \\
+\texttt{AdamW\_completo} & 0,9629 & 0,0154 & 0,0945 & 0,0371 \\\bottomrule
+\end{tabularx}\end{singlespace}\nota{DE: desviación estándar muestral. Brecha = F1 de entrenamiento menos F1 de desarrollo. Todas las cifras proceden de las corridas guardadas en \texttt{experimentos\_dev.csv}.}\end{table}
+\begin{figure}[H]\caption{Dispersión de F1 en las tres semillas}\label{fig:estabilidad_dev}
+\centering\includegraphics[width=0.9\textwidth,height=0.43\textheight,keepaspectratio]{resultados/estabilidad_dev.png}
+\nota{Barras calculadas a partir de la misma partición de desarrollo.}\end{figure}
+El mayor F1 medio de desarrollo correspondió a
+\texttt{AdamW\_completo}; la cifra fue
+0,9629.
+La Figura~\ref{fig:regularizacion} compara entrenamiento y desarrollo
+en pérdida y F1 para AdamW base y completo. La parada temprana acorta
+la exposición de la red a un conjunto de entrenamiento pequeño,
+pero el gráfico no aísla por sí solo el efecto de dropout del programador.
+\begin{figure}[H]\caption{Efectos observados de la política completa}\label{fig:regularizacion}
+\centering\includegraphics[width=1.0\textwidth,height=0.5\textheight,keepaspectratio]{resultados/regularizacion.png}
+\nota{Columnas: AdamW base y completo; filas: pérdida y F1. Semilla 19.}\end{figure}
+\section{Prueba separada e interpretación}
+La Tabla~\ref{tab:test} corresponde exclusivamente a la configuración
+elegida. Se calcularon exactitud, precisión, exhaustividad y F1 macro,
+además de la pérdida. La Figura~\ref{fig:matriz_test} es la matriz de
+confusión para la primera semilla. En sus 36 casos todos quedaron en la
+diagonal; ello documenta este test, no una tasa de error verdadera igual
+a cero. Con un conjunto tan pequeño, un error adicional cambiaría la
+exactitud en aproximadamente $1/36$.
+\begin{table}[H]\caption{Evaluación final de la configuración elegida}\label{tab:test}
+\begin{singlespace}\small\centering\begin{tabularx}{\textwidth}{cccccc}\toprule
+Semilla & Exactitud & Precisión & Exhaustividad & F1 macro & Pérdida \\\midrule
+19 & 1,0000 & 1,0000 & 1,0000 & 1,0000 & 0,0040 \\
+31 & 1,0000 & 1,0000 & 1,0000 & 1,0000 & 0,0180 \\
+43 & 1,0000 & 1,0000 & 1,0000 & 1,0000 & 0,0052 \\\bottomrule
+\end{tabularx}\end{singlespace}\nota{Prueba consultada solo después de elegir la configuración en desarrollo. Métricas macro: media no ponderada por clase.}\end{table}
+\begin{figure}[H]\caption{Matriz de confusión en 36 observaciones de prueba}\label{fig:matriz_test}
+\centering\includegraphics[width=0.8\textwidth,height=0.42\textheight,keepaspectratio]{resultados/matriz_test.png}
+\nota{Modelo seleccionado, semilla 19; filas reales y columnas predichas.}\end{figure}
+\section{Conclusión y reproducibilidad}
+En este corte de Wine, la política completa fue elegida por desarrollo
+y acertó las 36 observaciones de prueba en las tres inicializaciones.
+Es una observación fuerte del experimento, pero frágil como promesa de
+desempeño en muestras futuras. Se requeriría evaluación externa o
+validación repetida de particiones para cuantificar esa incertidumbre.
+
+Se entregan script, cuaderno, partición por índices, 15 historiales,
+configuraciones, predicciones y modelo seleccionado. La ejecución
+registrada fue local en CPU; el cuaderno se preparó para abrir en Colab,
+sin atribuirle una ejecución que no se realizó allí.
+\clearpage\section{Referencias}
+\refapa{Loshchilov, I., \& Hutter, F. (2019). Decoupled weight decay regularization. \textit{International Conference on Learning Representations}. \url{https://openreview.net/forum?id=Bkg6RiCqY7}}
+\refapa{PyTorch. (s. f.). \textit{AdamW}. \url{https://docs.pytorch.org/docs/main/generated/torch.optim.AdamW.html}}
+\refapa{scikit-learn. (s. f.). \textit{load\_wine}. \url{https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_wine.html}}
+\end{document}
