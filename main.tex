@@ -73,6 +73,20 @@ Optimizador y variante & Tasa & Decaimiento & Dropout & Parada \\\midrule
 \texttt{AdamW\_decay} & 0,0030 & 0,001 & 0,00 & No \\
 \texttt{AdamW\_completo} & 0,0030 & 0,001 & 0,15 & Sí \\\bottomrule
 \end{tabularx}\end{singlespace}\nota{Quince ajustes por persona: cinco configuraciones y tres semillas. La tasa de SGD y RMSprop se fijó antes de comparar; no se hizo búsqueda exhaustiva.}\end{table}
+La implementación principal conserva el aislamiento de datos.
+Estos fragmentos muestran el escalado, AdamW y la medición macro:
+\begin{singlespace}\begin{lstlisting}
+escalador = StandardScaler().fit(x[it])
+normal = escalador.transform(x).astype(np.float32)
+opt = torch.optim.AdamW(modelo.parameters(), lr=.003,
+                        weight_decay=.001)
+precision, recall, f1, _ = precision_recall_fscore_support(
+    y.numpy(), pred, average='macro', zero_division=0)
+\end{lstlisting}\end{singlespace}
+Un modelo con mucho sesgo no separaría ni los datos de entrenamiento;
+uno con alta varianza podría memorizar ese conjunto y fallar en datos
+nuevos. La regularización busca equilibrarlos, pero aquí 36 casos de
+desarrollo y una sola partición limitan la precisión de esa lectura.
 \section{Evidencia de desarrollo}
 La Figura~\ref{fig:optimizadores} muestra cómo se mueve cada método para
 la semilla 19. La Tabla~\ref{tab:dev} promedia tres inicializaciones.

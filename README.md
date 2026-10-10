@@ -2,7 +2,7 @@
 
 Clasificación de vinos mediante 13 mediciones y una red densa 13-64-32-3. Se contrasta AdamW desacoplado con SGD y RMSprop; se informa la fragilidad de una prueba de 36 observaciones.
 
-Este proyecto conserva el código que produjo las figuras y cifras del informe. Las imágenes sintéticas de OpenCV no representan capturas de cámara; los experimentos de redes se ejecutaron localmente en CPU. El cuaderno es autónomo y se puede abrir en Google Colab; no se atribuye a Colab una ejecución que no se hizo allí.
+Este proyecto conserva el código que produjo las figuras y cifras del informe. Los entrenamientos se ejecutaron localmente en CPU, con la prueba aislada de la selección. El cuaderno es autónomo y se puede abrir en Google Colab; no se atribuye a Colab una ejecución que no se hizo allí.
 
 ## Archivos
 
