@@ -4,15 +4,12 @@
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0%2B-ee4c2c.svg)](https://pytorch.org/)
 [![Scikit-Learn](https://img.shields.io/badge/scikit--learn-1.3%2B-f89939.svg)](https://scikit-learn.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Overleaf Project](https://img.shields.io/badge/Overleaf-Documento%20APA%207-47A141.svg)](https://www.overleaf.com/project/6aca70b7e714829b5f2d561d)
-[![Calificación Rúbrica](https://img.shields.io/badge/Rúbrica%20Moodle-5.0%20%2F%205.0%20(10%2F10)-success.svg)](#)
 
 > **Materia:** 608142 – Deep Learning - Conceptos  
 > **Actividad:** R1-A3-S7 -- Redes Neuronales III (Moodle ID: `73333`)  
 > **Autor:** Carlos Mario Salvatore Ocampo Aguilar  
 > **Programa:** Especialización en Inteligencia Artificial – Universidad de Cundinamarca  
 > **Fecha de entrega:** Sábado, 10 de octubre de 2026, 23:59  
-> **Proyecto Overleaf:** [https://www.overleaf.com/project/6aca70b7e714829b5f2d561d](https://www.overleaf.com/project/6aca70b7e714829b5f2d561d)
 
 ---
 
@@ -116,8 +113,6 @@ carlos-redes-neuronales-iii-vinos/
 ├── requirements.txt               # Dependencias reproducibles (PyTorch, scikit-learn, etc.)
 ├── experimento_redes.py           # Script modular de entrenamiento y evaluación en CPU
 ├── Carlos_Redes.ipynb             # Cuaderno Jupyter con celdas ejecutadas y gráficos embebidos
-├── Carlos_Redes_Informe.pdf       # Informe formal en formato PDF (Norma APA 7.ª edición)
-├── main.tex                       # Código fuente LaTeX editable (Overleaf)
 ├── historiales.zip                # CSVs de curvas de pérdida y F1 por época para las 15 ejecuciones
 ├── modelo_seleccionado.pt         # Pesos sinápticos serializados del modelo óptimo en PyTorch
 ├── experimentos_dev.csv           # Registro consolidado de métricas en desarrollo
