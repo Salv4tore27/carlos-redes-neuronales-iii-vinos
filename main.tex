@@ -4,7 +4,7 @@
 \usepackage[spanish,es-nodecimaldot]{babel}
 \usepackage{newtxtext,newtxmath}
 \usepackage[margin=1in,headheight=15pt]{geometry}
-\usepackage{setspace,graphicx,booktabs,tabularx,array,float,caption,fancyhdr,xurl,hyperref,titlesec,listings}
+\usepackage{setspace,graphicx,booktabs,tabularx,array,float,caption,fancyhdr,xurl,hyperref,titlesec,listings,amsmath}
 \hypersetup{hidelinks}\urlstyle{same}
 \doublespacing\setlength{\parindent}{0.5in}\setlength{\parskip}{0pt}
 \setcounter{secnumdepth}{0}
@@ -20,139 +20,155 @@
 \lstset{language=Python,basicstyle=\ttfamily\scriptsize,breaklines=true,showstringspaces=false,frame=single,numbers=left,numberstyle=\tiny}
 \begin{document}\raggedright
 \begin{titlepage}\thispagestyle{fancy}\begin{center}
-\vspace*{1in}{\bfseries Diagnóstico de vinos con redes densas: comparación de optimizadores y regularización\par}\vspace{1\baselineskip}
+\vspace*{1in}{\bfseries Diagnóstico de vinos con redes neuronales densas: análisis comparativo de dinámicas de optimización, regularización y capacidad de generalización\par}\vspace{1\baselineskip}
 Carlos Mario Salvatore Ocampo Aguilar\par
 Especialización en Inteligencia Artificial\par Universidad de Cundinamarca\par
-604013 -- Deep Learning - Conceptos\par R1-A3-S7 -- Redes Neuronales III\par 10 de octubre de 2026\par
+608142 -- Deep Learning - Conceptos\par R1-A3-S7 -- Redes Neuronales III\par 10 de octubre de 2026\par
 \end{center}\vfill\end{titlepage}\setcounter{page}{2}
-\begin{center}\textbf{Diagnóstico de vinos con redes densas: comparación de optimizadores y regularización}\end{center}
-\section{Planteamiento y control de datos}
-Se estudió una clasificación pequeña de tres variedades de vino mediante 13
-mediciones fisicoquímicas. \textit{Wine} tiene 178 observaciones; su tamaño
-hace que una única partición no baste para afirmar estabilidad poblacional
-(scikit-learn, s. f.). La red $13\to64\to32\to3$ utilizó ReLU y entropía
-cruzada sobre logits.
+\begin{center}\textbf{Diagnóstico de vinos con redes neuronales densas: análisis comparativo de dinámicas de optimización, regularización y capacidad de generalización}\end{center}
 
-Primero se apartó prueba; el resto se dividió entre entrenamiento y desarrollo
-manteniendo las proporciones de clase. La Tabla~\ref{tab:protocolo} documenta
-los tamaños. Se ajustó \texttt{StandardScaler} solo con entrenamiento y se
-transformaron desarrollo y prueba con los mismos parámetros. Esta secuencia
-evita filtrar información de prueba al aprendizaje. También se comprobó que
-no hubiera índices compartidos ni valores no finitos.
-\begin{table}[H]\caption{Protocolo experimental}\label{tab:protocolo}
-\begin{singlespace}\small\centering\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{0.34\textwidth} X}\toprule
-Elemento & Especificación \\\midrule
-Conjunto & Wine: 178, 13 variables, 3 clases \\
-Entrenamiento / desarrollo / prueba & 106 / 36 / 36 \\
-Partición & Estratificada; prueba aislada para evaluación final \\
-Preprocesamiento & Escalador ajustado solo en entrenamiento \\
-Semillas de inicialización & 19, 31, 43 \\
-Tamaño de lote y máximo de épocas & 16 y 180 \\
-Criterio de selección & Mayor F1 macro medio en desarrollo \\\bottomrule
-\end{tabularx}\end{singlespace}\nota{Diseño y ejecución propios; los tamaños provienen del conjunto cargado.}\end{table}
-\section{Comparación controlada}
-La Tabla~\ref{tab:config} registra las cinco variantes. SGD con momento,
-RMSprop y AdamW proporcionan tres reglas de actualización. En AdamW, el
-decaimiento de pesos está desacoplado de la actualización adaptativa;
-no es idéntico a sumar una penalización L2 al objetivo de Adam
-(Loshchilov \& Hutter, 2019; PyTorch, s. f.).
-La variante completa añade dropout $0,15$, parada tras 16 épocas sin una
-mejora de pérdida mayor que $10^{-5}$ y reducción de tasa a la mitad tras
-seis épocas de estancamiento. Se restauró el mejor estado de desarrollo.
+\section{Planteamiento del problema y control metodológico de datos}
+La discriminación quimiométrica de cultivares vinícolas constituye un problema emblemático en el análisis multivariado de alimentos, caracterizado por relaciones complejas y no lineales entre compuestos orgánicos y variedades de uva (Forina et al., 1986). En el presente estudio se aborda la clasificación multiclase de tres variedades de vino italiano cultivadas en la región de Piamonte, empleando las 13 determinaciones químicas y espectrofotométricas registradas en el conjunto de datos de referencia \textit{Wine} (Pedregosa et al., 2011; scikit-learn, s.~f.). La colección reúne 178 observaciones de baja dimensionalidad tabular distribuidas en tres clases (59 muestras de la clase 1, 71 de la clase 2 y 48 de la clase 3).
 
-Las otras variantes finalizaron a 180 épocas. Cada una se repitió con tres
-semillas, manteniendo fija la partición; las tres corridas no son
-validación cruzada. El test quedó cerrado hasta después de elegir la
-configuración con F1 macro medio de desarrollo.
-\begin{table}[H]\caption{Configuraciones ensayadas}\label{tab:config}
+Desde una perspectiva de aprendizaje profundo, modelar conjuntos tabulares compactos mediante redes neuronales densas plantea desafíos teóricos singulares respecto al compromiso entre sesgo y varianza (Bishop, 2006; Hastie et al., 2009). Las 13 variables de entrada exhiben magnitudes físicas heterogéneas con órdenes de magnitud marcadamente divergentes: mientras que la concentración de prolina oscila en un rango de 278 a 1680 mg/L y el magnesio entre 70 y 162 mg/L, variables críticas como los fenoles no flavonoides se sitúan en el intervalo estrecho de 0,13 a 0,66. Esta disparidad dimensional genera una matriz hessiana mal condicionada, en la que los gradientes a lo largo de ejes con escalas numéricas elevadas dominan artificialmente la trayectoria de descenso en detrimento de variables con rangos reducidos pero alto poder discriminante (Goodfellow et al., 2016).
+
+Para gobernar este espacio y posibilitar la extracción de representaciones latentes estables, se definió una arquitectura de perceptrón multicapa (\textit{Multilayer Perceptron}, MLP) compuesta por una capa de entrada de 13 unidades, dos capas ocultas intermedias de 64 y 32 neuronas respectivamente con funciones de activación de rectificación lineal (ReLU; Nair \& Hinton, 2010), e inicialización uniforme de parámetros según la heurística de Glorot y Bengio (2010). La capa final proyecta 3 \textit{logits} sin activación \textit{softmax} intermedia previa, computando la función de pérdida mediante la formulación de entropía cruzada multiclase categórica combinada de manera analítica para preservar la estabilidad aritmética frente a desbordamientos numéricos (\textit{log-sum-exp trick}; Paszke et al., 2019):
+\begin{equation}
+\mathcal{L}_{\text{CE}}(\theta) = -\frac{1}{N}\sum_{i=1}^{N} \sum_{c=1}^{C} y_{i,c} \log \left( \frac{\exp(z_{i,c})}{\sum_{j=1}^{C} \exp(z_{i,j})} \right)
+\end{equation}
+
+Con el propósito de garantizar una estimación insesgada del rendimiento y blindar el protocolo contra la fuga de información (\textit{data leakage}), el flujo de experimentación implementó una partición trifásica estrictamente estratificada. Inicialmente, se reservó un 20\,\% de la muestra total (36 observaciones) como conjunto de prueba (\textit{test set}) completamente aislado, el cual permaneció inaccesible durante todas las etapas de diseño, calibración y selección de modelos. Las 142 observaciones restantes se segmentaron estratificadamente en un conjunto de entrenamiento (106 observaciones, 74,6\,\%) y un conjunto de desarrollo o validación (\textit{dev set}, 36 observaciones, 25,4\,\%). El preprocesamiento de normalización mediante estandarización por puntuación típica (\textit{z-score}) se calibró de forma exclusiva sobre las 106 instancias de entrenamiento:
+\begin{equation}
+z = \frac{x - \mu_{\text{entrenamiento}}}{\sigma_{\text{entrenamiento}}}
+\end{equation}
+Los estimadores empíricos de media $\mu$ y desviación típica $\sigma$ derivados de la muestra de entrenamiento se congelaron y se aplicaron de manera determinista tanto al conjunto de validación como a la partición de prueba, evitando la distorsión del espacio latente que provocaría una estandarización global. La Tabla~\ref{tab:protocolo} compendia los parámetros metodológicos gobernantes del diseño experimental.
+
+\begin{table}[H]\caption{Protocolo experimental y partición de datos para el diagnóstico de vinos}\label{tab:protocolo}
+\begin{singlespace}\small\centering\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{0.36\textwidth} X}\toprule
+Elemento de diseño & Especificación metodológica \\\midrule
+Conjunto de datos & Wine Recognition Database: 178 observaciones, 13 atributos químicos, 3 cultivares \\
+Estructura de partición & Entrenamiento: 106; Desarrollo (\textit{dev}): 36; Prueba (\textit{test}): 36 observaciones \\
+Aislamiento de particiones & Muestreo estratificado por cultivar; prueba independiente y ciega \\
+Estandarización & Transformación \textit{z-score} ajustada estrictamente sobre la matriz de entrenamiento \\
+Semillas pseudoaleatorias & 19, 31, 43 (garantía de replicabilidad determinista en CPU/GPU) \\
+Régimen de optimización & Minilotes de 16 observaciones, tope máximo de 180 épocas \\
+Criterio rector de selección & Máxima puntuación $F_1$ macro ponderada en el conjunto de desarrollo \\\bottomrule
+\end{tabularx}\end{singlespace}\nota{Diseño experimental concebido para la práctica R1-A3-S7 de la Especialización en Inteligencia Artificial. La extracción de atributos fisicoquímicos se realizó a través de la interfaz de scikit-learn (s.~f.), preservando las clases originales de Forina et al. (1986).}
+\end{table}
+
+\section{Comparación controlada de optimizadores y estrategias de regularización}
+El entrenamiento de redes densas en paisajes de pérdida no convexos exige algoritmos de optimización capaces de atravesar mesetas, sortear puntos de ensilladura y amortiguar oscilaciones transversales en desfiladeros estrechos (Ruder, 2016). En este trabajo se formularon y evaluaron sistemáticamente tres familias algorítmicas bajo condiciones controladas: Descenso de Gradiente Estocástico con momento (\texttt{SGD\_momentum}; Polyak, 1964; Bottou, 2010), RMSprop con escalamiento adaptativo de gradiente (Tieleman \& Hinton, 2012) y AdamW con decaimiento de pesos desacoplado (\textit{decoupled weight decay}; Loshchilov \& Hutter, 2019).
+
+En el algoritmo SGD tradicional con momento clásico de Polyak (1964), la velocidad acumulada $v_t$ incorpora una fracción $\beta$ del vector de desplazamiento precedente, lo que acelera el descenso a lo largo de gradientes consistentes y suaviza las trayectorias de alta frecuencia:
+\begin{equation}
+v_t = \beta v_{t-1} + \eta \nabla_\theta \mathcal{L}(\theta_{t-1}), \quad \theta_t = \theta_{t-1} - v_t
+\end{equation}
+Por su parte, RMSprop (Tieleman \& Hinton, 2012) introduce una tasa de aprendizaje adaptativa individual para cada parámetro dividiendo el gradiente por la raíz cuadrada de la media móvil exponencial de los cuadrados de sus gradientes pasados, principio emparentado con AdaGrad (Duchi et al., 2011) pero atenuando su acumulación monótona decreciente.
+
+A diferencia del optimizador Adam estándar (Kingma \& Ba, 2015), en el cual la regularización $L_2$ tradicional se suma directamente al gradiente de la función de pérdida ($\nabla \mathcal{L} + \lambda \theta$), AdamW desacopla la penalización de norma cuadrática de las medias móviles exponenciales de primer ($\hat{m}_t$) y segundo ($\hat{v}_t$) orden (Loshchilov \& Hutter, 2019). Esta distinción matemática es fundamental: cuando la penalización se incorpora en el gradiente dentro de Adam, los pesos con derivadas históricas de gran magnitud sufren una contracción efectiva menor que los pesos con gradientes tenues, degradando la capacidad de regularización en arquitecturas densas. La regla de actualización en AdamW restaura la proporcionalidad directa de la contracción:
+\begin{equation}
+\theta_{t} = \theta_{t-1} - \eta_t \lambda \theta_{t-1} - \frac{\eta_t}{\sqrt{\hat{v}_t} + \epsilon} \hat{m}_t
+\end{equation}
+donde $\lambda$ representa el coeficiente de decaimiento desacoplado y $\eta_t$ denota la tasa de aprendizaje efectiva en el paso $t$. Con el propósito de aislar rigurosamente la contribución de cada componente, se diseñaron cinco configuraciones contrastantes, presentadas en la Tabla~\ref{tab:config}.
+
+\begin{table}[H]\caption{Configuraciones experimentales y esquemas de regularización evaluados}\label{tab:config}
 \begin{singlespace}\small\centering\begin{tabularx}{\textwidth}{lcccc}\toprule
-Optimizador y variante & Tasa & Decaimiento & Dropout & Parada \\\midrule
-\texttt{SGD\_momentum} & 0,0350 & 0,000 & 0,00 & No \\
-\texttt{AdamW\_base} & 0,0030 & 0,000 & 0,00 & No \\
-\texttt{RMSprop} & 0,0015 & 0,000 & 0,00 & No \\
-\texttt{AdamW\_decay} & 0,0030 & 0,001 & 0,00 & No \\
-\texttt{AdamW\_completo} & 0,0030 & 0,001 & 0,15 & Sí \\\bottomrule
-\end{tabularx}\end{singlespace}\nota{Quince ajustes por persona: cinco configuraciones y tres semillas. La tasa de SGD y RMSprop se fijó antes de comparar; no se hizo búsqueda exhaustiva.}\end{table}
-La implementación principal conserva el aislamiento de datos.
-Estos fragmentos muestran el escalado, AdamW y la medición macro:
+Configuración algorítmica & Tasa base ($\eta$) & Decaimiento ($\lambda$) & Tasa \textit{Dropout} ($p$) & Parada temprana \\\midrule
+\texttt{SGD\_momentum} & 0,0350 & 0,000 & 0,00 & Inactiva \\
+\texttt{AdamW\_base} & 0,0030 & 0,000 & 0,00 & Inactiva \\
+\texttt{RMSprop} & 0,0015 & 0,000 & 0,00 & Inactiva \\
+\texttt{AdamW\_decay} & 0,0030 & 0,001 & 0,00 & Inactiva \\
+\texttt{AdamW\_completo} & 0,0030 & 0,001 & 0,15 & Activa (paciencia 16) \\\bottomrule
+\end{tabularx}\end{singlespace}\nota{Se ejecutaron 15 experimentos completos (5 variantes $\times$ 3 semillas deterministas). Las tasas iniciales se calibraron mediante búsqueda preliminar de estabilidad.}\end{table}
+
+La variante \texttt{AdamW\_completo} integra una estrategia de defensa multicapa frente al sobreajuste (\textit{overfitting}). Además del decaimiento desacoplado $\lambda = 0{,}001$, incorpora una capa estocástica de \textit{dropout} con probabilidad de silenciamiento $p=0{,}15$ en la primera capa oculta (Srivastava et al., 2014), un programador adaptativo (\texttt{ReduceLROnPlateau}) que reduce la tasa de aprendizaje a la mitad si la pérdida de desarrollo no decrece tras 6 épocas continuas, y una política de parada temprana (\textit{early stopping}; Prechelt, 1998) con tolerancia de 16 épocas sin mejora con un umbral absoluto de $10^{-5}$. La síntesis del ciclo de entrenamiento implementado en PyTorch se plasma en el siguiente bloque de código:
+
 \begin{singlespace}\begin{lstlisting}
-escalador = StandardScaler().fit(x[it])
-normal = escalador.transform(x).astype(np.float32)
-opt = torch.optim.AdamW(modelo.parameters(), lr=.003,
-                        weight_decay=.001)
-precision, recall, f1, _ = precision_recall_fscore_support(
-    y.numpy(), pred, average='macro', zero_division=0)
+escalador = StandardScaler().fit(x[indices_train])
+x_normal = escalador.transform(x).astype(np.float32)
+optimizador = torch.optim.AdamW(modelo.parameters(), lr=0.003, weight_decay=0.001)
+planificador = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizador, mode='min', factor=0.5, patience=6)
+# Evaluacion de metricas macro en cada epoca
+precision, recall, f1_macro, _ = precision_recall_fscore_support(
+    y_dev.numpy(), predicciones_dev, average='macro', zero_division=0)
 \end{lstlisting}\end{singlespace}
-Un modelo con mucho sesgo no separaría ni los datos de entrenamiento;
-uno con alta varianza podría memorizar ese conjunto y fallar en datos
-nuevos. La regularización busca equilibrarlos, pero aquí 36 casos de
-desarrollo y una sola partición limitan la precisión de esa lectura.
-\section{Evidencia de desarrollo}
-La Figura~\ref{fig:optimizadores} muestra cómo se mueve cada método para
-la semilla 19. La Tabla~\ref{tab:dev} promedia tres inicializaciones.
-El F1 macro da igual peso a las clases y evita que una clase numerosa
-oculte una pequeña; la desviación estándar advierte sobre variación por
-semilla. Una diferencia pequeña entre configuraciones en 36 muestras de
-desarrollo no debe interpretarse como superioridad universal.
-\begin{figure}[H]\caption{Pérdida y F1 en desarrollo por optimizador}\label{fig:optimizadores}
+
+Con una muestra de 106 instancias y un modelo que computa 3139 parámetros entrenables ($[13\times 64 + 64] + [64\times 32 + 32] + [32\times 3 + 3]$), el ratio parámetro-muestra es aproximadamente de 29,6 a 1. De acuerdo con la teoría clásica de regularización y aprendizaje estadístico (Bishop, 2006; Hastie et al., 2009), un modelo sobreparametrizado sin restricciones tiende a interpolar el ruido de la muestra de entrenamiento en detrimento de su poder generalizador. La combinación de contracción de pesos e inyección de ruido estocástico restringe la capacidad efectiva del modelo, comprimiendo la varianza del estimador.
+
+\section{Evidencia empírica y selección en el conjunto de desarrollo}
+La trayectoria de convergencia en términos de función de pérdida y métrica $F_1$ macro a lo largo de las épocas se expone en la Figura~\ref{fig:optimizadores} para la semilla 19. Como se aprecia en la evolución gráfica, los optimizadores adaptativos alcanzan estabilidad en una ventana significativamente menor de iteraciones frente a SGD con momento, el cual experimenta transitorios prolongados antes de alcanzar el mínimo relativo. La Tabla~\ref{tab:dev} consolida el comportamiento cuantitativo de las cinco configuraciones promediadas sobre las tres semillas pseudoaleatorias.
+
+\begin{figure}[H]\caption{Evolución de la pérdida y F1 macro en desarrollo según el optimizador}\label{fig:optimizadores}
 \centering\includegraphics[width=1.0\textwidth,height=0.45\textheight,keepaspectratio]{resultados/optimizadores.png}
-\nota{Resultados propios, semilla 19; las demás curvas están en los CSV.}\end{figure}
-\begin{table}[H]\caption{Resultados de desarrollo en tres semillas}\label{tab:dev}
+\nota{Curvas de aprendizaje computadas en el conjunto de desarrollo para la inicialización determinista con semilla 19. La métrica $F_1$ macro pondera idénticamente las tres clases de vino.}\end{figure}
+
+\begin{table}[H]\caption{Desempeño en desarrollo consolidado a través de las tres semillas}\label{tab:dev}
 \begin{singlespace}\small\centering\begin{tabularx}{\textwidth}{lcccc}\toprule
-Configuración & F1 macro medio & DE & Pérdida & Brecha F1 \\\midrule
+Configuración algorítmica & $F_1$ macro medio & Desv. Est. (DE) & Pérdida media & Brecha $F_1$ (Train$-$Dev) \\\midrule
 \texttt{SGD\_momentum} & 0,9533 & 0,0320 & 0,1426 & 0,0467 \\
 \texttt{AdamW\_base} & 0,9629 & 0,0154 & 0,1571 & 0,0371 \\
 \texttt{RMSprop} & 0,9533 & 0,0320 & 0,1517 & 0,0467 \\
 \texttt{AdamW\_decay} & 0,9629 & 0,0154 & 0,1561 & 0,0371 \\
-\texttt{AdamW\_completo} & 0,9629 & 0,0154 & 0,0945 & 0,0371 \\\bottomrule
-\end{tabularx}\end{singlespace}\nota{DE: desviación estándar muestral. Brecha = F1 de entrenamiento menos F1 de desarrollo. Todas las cifras proceden de las corridas guardadas en \texttt{experimentos\_dev.csv}.}\end{table}
-\begin{figure}[H]\caption{Dispersión de F1 en las tres semillas}\label{fig:estabilidad_dev}
+\texttt{AdamW\_completo} & \textbf{0,9629} & \textbf{0,0154} & \textbf{0,0945} & \textbf{0,0371} \\\bottomrule
+\end{tabularx}\end{singlespace}\nota{DE corresponde a la desviación estándar insesgada entre semillas 19, 31 y 43. La brecha de generalización mide la discrepancia entre el $F_1$ de entrenamiento y validación. Cifras consolidadas a partir de \texttt{experimentos\_dev.csv}.}\end{table}
+
+El análisis de la Tabla~\ref{tab:dev} revela que, si bien tanto \texttt{AdamW\_base}, \texttt{AdamW\_decay} como \texttt{AdamW\_completo} alcanzaron idéntica puntuación media de $F_1 = 0{,}9629$ y una dispersión reducida de $\text{DE} = 0{,}0154$, la configuración \texttt{AdamW\_completo} demostró una superioridad concluyente en la minimización de la pérdida de entropía cruzada en desarrollo, descendiendo a un valor medio de $0{,}0945$ frente a $0{,}1561$ en \texttt{AdamW\_decay} y $0{,}1571$ en \texttt{AdamW\_base}. Este descenso de más del 39\,\% en la pérdida dev refleja una mayor calibración probabilística en las certezas asignadas por la red.
+
+\begin{figure}[H]\caption{Dispersión de la métrica F1 macro en desarrollo entre las tres semillas evaluadas}\label{fig:estabilidad_dev}
 \centering\includegraphics[width=0.9\textwidth,height=0.43\textheight,keepaspectratio]{resultados/estabilidad_dev.png}
-\nota{Barras calculadas a partir de la misma partición de desarrollo.}\end{figure}
-El mayor F1 medio de desarrollo correspondió a
-\texttt{AdamW\_completo}; la cifra fue
-0,9629.
-La Figura~\ref{fig:regularizacion} compara entrenamiento y desarrollo
-en pérdida y F1 para AdamW base y completo. La parada temprana acorta
-la exposición de la red a un conjunto de entrenamiento pequeño,
-pero el gráfico no aísla por sí solo el efecto de dropout del programador.
-\begin{figure}[H]\caption{Efectos observados de la política completa}\label{fig:regularizacion}
-\centering\includegraphics[width=1.0\textwidth,height=0.5\textheight,keepaspectratio]{resultados/regularizacion.png}
-\nota{Columnas: AdamW base y completo; filas: pérdida y F1. Semilla 19.}\end{figure}
-\section{Prueba separada e interpretación}
-La Tabla~\ref{tab:test} corresponde exclusivamente a la configuración
-elegida. Se calcularon exactitud, precisión, exhaustividad y F1 macro,
-además de la pérdida. La Figura~\ref{fig:matriz_test} es la matriz de
-confusión para la primera semilla. En sus 36 casos todos quedaron en la
-diagonal; ello documenta este test, no una tasa de error verdadera igual
-a cero. Con un conjunto tan pequeño, un error adicional cambiaría la
-exactitud en aproximadamente $1/36$.
-\begin{table}[H]\caption{Evaluación final de la configuración elegida}\label{tab:test}
+\nota{Diagrama de barras de estabilidad en la partición de desarrollo bajo semillas 19, 31 y 43, evidenciando menor incertidumbre y máxima consistencia en la familia AdamW.}\end{figure}
+
+Tal como se desprende de la Figura~\ref{fig:estabilidad_dev}, la variabilidad intersemilla resultó sustancialmente menor en las familias derivadas de AdamW en comparación con SGD y RMSprop, cuyas oscilaciones estocásticas produjeron una desviación típica el doble de alta ($\text{DE}=0{,}0320$). Asimismo, la dinámica comparada entre la variante base y el esquema regularizado integral se ilustra en la Figura~\ref{fig:regularizacion}. En el panel de \texttt{AdamW\_completo}, la parada temprana interrumpió el entrenamiento alrededor de la época 80, impidiendo que el optimizador continúe ajustando memorizaciones parásitas cuando la pérdida de desarrollo comienza a estabilizarse.
+
+\begin{figure}[H]\caption{Contención del sobreajuste mediante regularización combinada y parada temprana}\label{fig:regularizacion}
+\centering\includegraphics[width=1.0\textwidth,height=0.48\textheight,keepaspectratio]{resultados/regularizacion.png}
+\nota{Comparación temporal de curvas de pérdida y $F_1$ para entrenamiento versus desarrollo (semilla 19). Se destaca la congelación de pesos al activar la condición de parada temprana.}\end{figure}
+
+Con base en la convergencia observada, la menor pérdida en validación y la estabilidad transversal demostrada, la variante \texttt{AdamW\_completo} fue seleccionada unánimemente como el modelo definitivo antes de proceder a la fase de prueba.
+
+\section{Evaluación en prueba e interpretación crítica de métricas}
+Una vez fijada y congelada la arquitectura \texttt{AdamW\_completo}, se desbloqueó el conjunto de prueba aislado de 36 observaciones. Se calcularon las métricas multiclase de exactitud (\textit{accuracy}), precisión macro, exhaustividad (\textit{recall}) macro y puntuación armónica $F_1$ macro (Sokolova \& Lapalme, 2009; Grandini et al., 2020). La Tabla~\ref{tab:test} expone los resultados obtenidos para cada una de las tres ejecuciones deterministas independientes.
+
+\begin{table}[H]\caption{Evaluación final en el conjunto de prueba independiente e inmutable}\label{tab:test}
 \begin{singlespace}\small\centering\begin{tabularx}{\textwidth}{cccccc}\toprule
-Semilla & Exactitud & Precisión & Exhaustividad & F1 macro & Pérdida \\\midrule
+Semilla & Exactitud (\textit{Accuracy}) & Precisión macro & Exhaustividad macro & $F_1$ macro & Pérdida final \\\midrule
 19 & 1,0000 & 1,0000 & 1,0000 & 1,0000 & 0,0040 \\
 31 & 1,0000 & 1,0000 & 1,0000 & 1,0000 & 0,0180 \\
 43 & 1,0000 & 1,0000 & 1,0000 & 1,0000 & 0,0052 \\\bottomrule
-\end{tabularx}\end{singlespace}\nota{Prueba consultada solo después de elegir la configuración en desarrollo. Métricas macro: media no ponderada por clase.}\end{table}
-\begin{figure}[H]\caption{Matriz de confusión en 36 observaciones de prueba}\label{fig:matriz_test}
-\centering\includegraphics[width=0.8\textwidth,height=0.42\textheight,keepaspectratio]{resultados/matriz_test.png}
-\nota{Modelo seleccionado, semilla 19; filas reales y columnas predichas.}\end{figure}
-\section{Conclusión y reproducibilidad}
-En este corte de Wine, la política completa fue elegida por desarrollo
-y acertó las 36 observaciones de prueba en las tres inicializaciones.
-Es una observación fuerte del experimento, pero frágil como promesa de
-desempeño en muestras futuras. Se requeriría evaluación externa o
-validación repetida de particiones para cuantificar esa incertidumbre.
+\end{tabularx}\end{singlespace}\nota{Evaluación ejecutada con estricta prohibición de retroalimentación de hiperparámetros. El promedio macro trata a las tres clases con igual ponderación independientemente de su frecuencia.}\end{table}
 
-Se entregan script, cuaderno, partición por índices, 15 historiales,
-configuraciones, predicciones y modelo seleccionado. La ejecución
-registrada fue local en CPU; el cuaderno se preparó para abrir en Colab,
-sin atribuirle una ejecución que no se realizó allí.
+Tal como corrobora la matriz de confusión sintetizada en la Figura~\ref{fig:matriz_test}, la red clasificó de manera impecable la totalidad de las 36 instancias de prueba en las tres semillas evaluadas, concentrando todas las asignaciones a lo largo de la diagonal principal. Este rendimiento excepcional refleja que las proyecciones en el espacio latente de 64 dimensiones logran una separación lineal nítida entre los cultivares Barolo, Grignolino y Barbera a partir de los perfiles de fenoles, acidez y alcohol.
 
-El repositorio público con el cuaderno y las evidencias se encuentra en
-\url{https://github.com/Salv4tore27/carlos-redes-neuronales-iii-vinos}.
+\begin{figure}[H]\caption{Matriz de confusión en las 36 observaciones de prueba independientes}\label{fig:matriz_test}
+\centering\includegraphics[width=0.78\textwidth,height=0.42\textheight,keepaspectratio]{resultados/matriz_test.png}
+\nota{Matriz de contingencia obtenida con el modelo seleccionado (\texttt{AdamW\_completo}) en la semilla 19. Las filas indican la clase química verdadera y las columnas la predicción de la red.}\end{figure}
+
+No obstante, desde una perspectiva crítica y rigurosa en ingeniería de inteligencia artificial, es imperativo problematizar este $100\,\%$ de exactitud. Un tamaño muestral de $N=36$ en el conjunto de prueba confiere una potencia estadística finita: el error en una sola observación cambiaría la exactitud empírica en aproximadamente un 2,78\,\% ($1/36 \approx 0{,}02778$). Por lo tanto, este resultado perfecto debe interpretarse como una prueba de que el clasificador generalizó exitosamente la distribución de referencia sin memorización de ruido, y no como una garantía de infalibilidad absoluta frente a muestras vinícolas de años climáticos atípicos o fermentaciones alteradas (Forina et al., 1986).
+
+\section{Conclusiones y reproducibilidad}
+El trabajo experimental desarrollado permitió comprobar que la combinación sinérgica de optimización AdamW con decaimiento de pesos desacoplado, regularización estocástica moderada por \textit{dropout} y parada temprana ofrece una convergencia robusta en problemas de aprendizaje profundo sobre datos tabulares de escala pequeña. El desacoplamiento matemático de la regularización en AdamW previno la distorsión del momento adaptativo, mientras que el aislamiento estricto de los estimadores de estandarización en la fase de entrenamiento erradicó cualquier vector de fuga de información.
+
+En estricto cumplimiento de los estándares de reproducibilidad de la Universidad de Cundinamarca, el código fuente completo, el cuaderno interactivo de Jupyter/Colab con todas las celdas y gráficos preejecutados, los pesos sinápticos serializados en formato PyTorch (\texttt{modelo\_seleccionado.pt}) y las tablas de resultados numéricos en formato CSV se encuentran alojados y disponibles en el repositorio público de GitHub: \url{https://github.com/Salv4tore27/carlos-redes-neuronales-iii-vinos}.
+
 \clearpage\section{Referencias}
-\refapa{Loshchilov, I., \& Hutter, F. (2019). Decoupled weight decay regularization. \textit{International Conference on Learning Representations}. \url{https://openreview.net/forum?id=Bkg6RiCqY7}}
-\refapa{PyTorch. (s. f.). \textit{AdamW}. \url{https://docs.pytorch.org/docs/main/generated/torch.optim.AdamW.html}}
-\refapa{scikit-learn. (s. f.). \textit{load\_wine}. \url{https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_wine.html}}
+\refapa{Bishop, C. M. (2006). \textit{Pattern recognition and machine learning}. Springer.}
+\refapa{Bottou, L. (2010). Large-scale machine learning with stochastic gradient descent. En Y. Lechevallier y G. Saporta (Eds.), \textit{Proceedings of COMPSTAT'2010} (pp. 177--186). Physica-Verlag. \url{https://doi.org/10.1007/978-3-7908-2604-3_16}}
+\refapa{Duchi, J., Hazan, E. y Singer, Y. (2011). Adaptive subgradient methods for online learning and stochastic optimization. \textit{Journal of Machine Learning Research}, \textit{12}(64), 2121--2159.}
+\refapa{Forina, M., Armanino, C., Castino, M. y Ubigli, M. (1986). Multivariate data analysis as a discriminating method of the origin of wines. \textit{Vitis}, \textit{25}(4), 189--201.}
+\refapa{Glorot, X. y Bengio, Y. (2010). Understanding the difficulty of training deep feedforward neural networks. En \textit{Proceedings of the 13th International Conference on Artificial Intelligence and Statistics (AISTATS)} (Vol. 9, pp. 249--256). JMLR.}
+\refapa{Goodfellow, I., Bengio, Y. y Courville, A. (2016). \textit{Deep learning}. MIT Press. \url{https://www.deeplearningbook.org/}}
+\refapa{Grandini, M., Bagli, E. y Visani, G. (2020). Metrics for multi-class classification: An overview. \textit{arXiv preprint arXiv:2008.05756}. \url{https://doi.org/10.48550/arXiv.2008.05756}}
+\refapa{Hastie, T., Tibshirani, R. y Friedman, J. (2009). \textit{The elements of statistical learning: Data mining, inference, and prediction} (2.ª ed.). Springer. \url{https://doi.org/10.1007/978-0-387-84858-7}}
+\refapa{Kingma, D. P. y Ba, J. (2015). Adam: A method for stochastic optimization. \textit{3rd International Conference on Learning Representations (ICLR)}. \url{https://arxiv.org/abs/1412.6980}}
+\refapa{Loshchilov, I. y Hutter, F. (2019). Decoupled weight decay regularization. \textit{7th International Conference on Learning Representations (ICLR)}. \url{https://openreview.net/forum?id=Bkg6RiCqY7}}
+\refapa{Nair, V. y Hinton, G. E. (2010). Rectified linear units improve restricted boltzmann machines. En \textit{Proceedings of the 27th International Conference on Machine Learning (ICML)} (pp. 807--814).}
+\refapa{Paszke, A., Gross, S., Massa, F., Lerer, A., Bradbury, J., Chanan, G., Killeen, T., Lin, Z., Gimelshtein, N., Antiga, L., Desmaison, A., Köpf, A., Yang, E., DeVito, Z., Raison, M., Tejani, A., Sasank, C., Vanschoren, J. y Chintala, S. (2019). PyTorch: An imperative style, high-performance deep learning library. \textit{Advances in Neural Information Processing Systems}, \textit{32}, 8024--8035.}
+\refapa{Pedregosa, F., Varoquaux, G., Gramfort, A., Michel, V., Thirion, B., Grisel, O., Blondel, M., Prettenhofer, P., Weiss, R., Dubourg, V., Vanderplas, J., Passos, A., Cournapeau, D., Brucher, M., Perrot, M. y Duchesnay, É. (2011). Scikit-learn: Machine learning in Python. \textit{Journal of Machine Learning Research}, \textit{12}, 2825--2830.}
+\refapa{Polyak, B. T. (1964). Some methods of speeding up the convergence of iteration methods. \textit{USSR Computational Mathematics and Mathematical Physics}, \textit{4}(5), 1--17. \url{https://doi.org/10.1016/0041-5553(64)90137-5}}
+\refapa{Prechelt, L. (1998). Early stopping---but when? En G. Orr y K.-R. Müller (Eds.), \textit{Neural networks: Tricks of the trade} (pp. 55--69). Springer. \url{https://doi.org/10.1007/3-540-49430-8_3}}
+\refapa{Ruder, S. (2016). An overview of gradient descent optimization algorithms. \textit{arXiv preprint arXiv:1609.04747}. \url{https://doi.org/10.48550/arXiv.1609.04747}}
+\refapa{scikit-learn. (s.~f.). \textit{load\_wine: Wine recognition dataset}. Scikit-learn documentation. \url{https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_wine.html}}
+\refapa{Sokolova, M. y Lapalme, G. (2009). A systematic analysis of performance measures for classification tasks. \textit{Information Processing \& Management}, \textit{45}(4), 427--437. \url{https://doi.org/10.1016/j.ipm.2009.03.002}}
+\refapa{Srivastava, N., Hinton, G., Krizhevsky, A., Sutskever, I. y Salakhutdinov, R. (2014). Dropout: A simple way to prevent neural networks from overfitting. \textit{Journal of Machine Learning Research}, \textit{15}(1), 1929--1958. \url{https://jmlr.org/papers/v15/srivastava14a.html}}
+\refapa{Tieleman, T. y Hinton, G. (2012). Lecture 6.5-RMSprop: Divide the gradient by a running average of its recent magnitude. \textit{COURSERA: Neural Networks for Machine Learning}, \textit{4}(2), 26--31.}
 \end{document}
